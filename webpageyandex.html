@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Виртуальный музей Матвеева Александра Константиновича</title>
+    <!-- Подключение шрифтов и Leaflet CSS -->
+
+    <style>
+        :root {
+            --bg-dark: #1a1a1a;
+            --bg-panel: #242424;
+            --gold: #c9a96e;
+            --gold-light: #e0c78a;
+            --text: #e0ddd5;
+            --text-muted: #a09b8c;
+            --border: #3a3a3a;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --radius: 12px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(201, 169, 110, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(201, 169, 110, 0.03) 0%, transparent 50%);
+        }
+
+        /* ---------- ШАПКА ---------- */
+        .header {
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: normal;
+            letter-spacing: 2px;
+            color: var(--gold-light);
+            text-shadow: 0 2px 10px rgba(201, 169, 110, 0.3);
+            margin-bottom: 0.5rem;
+        }
+
+        .header .subtitle {
+            font-style: italic;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            text-align: left;          /* ← выравнивание по левому краю */
+            margin-left: 0;
+            padding-left: 7rem; 
+            padding-right: 7rem;           
+        }
+
+        /* ---------- НАВИГАЦИЯ ---------- */
+        .nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1.5rem 2rem;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 9;
+            backdrop-filter: blur(10px);
+            background: rgba(26, 26, 26, 0.85);
+        }
+
+        .nav-btn {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 0.8rem 1.8rem;
+            font-family: 'Georgia', serif;
+            font-size: 1rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 30px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold-light);
+            box-shadow: 0 0 20px rgba(201, 169, 110, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: var(--gold);
+            color: #1a1a1a;
+            border-color: var(--gold);
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(201, 169, 110, 0.4);
+        }
+
+        .nav-btn .icon {
+            margin-right: 6px;
+            font-size: 1.1rem;
+        }
+
+        /* ---------- ОСНОВНОЙ КОНТЕНТ ---------- */
+        .main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page {
+            display: none;
+            animation: fadeSlide 0.5s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ---------- КАРТОЧКИ / ПАНЕЛИ ---------- */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .panel h2 {
+            font-size: 1.8rem;
+            font-weight: normal;
+            color: var(--gold-light);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid var(--border);
+            letter-spacing: 1px;
+        }
+
+        .panel h3 {
+            color: var(--gold);
+            margin: 1.5rem 0 0.8rem;
+            font-weight: normal;
+            font-size: 1.3rem;
+        }
+
+        .panel p {
+            line-height: 1.8;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        /* ---------- БИОГРАФИЯ ---------- */
+        .bio-grid {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .bio-portrait {
+            width: 100%;
+            border-radius: var(--radius);
+            border: 2px solid var(--border);
+            box-shadow: var(--shadow);
+            background: #2a2a2a;
+            aspect-ratio: 3/4;
+            object-fit: cover;
+        }
+
+        .bio-portrait-placeholder {
+            width: 100%;
+            aspect-ratio: 3/4;
+            background: linear-gradient(135deg, #2a2a2a 0%, #333 100%);
+            border-radius: var(--radius);
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-style: italic;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .timeline {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .timeline li {
+            padding: 0.8rem 0 0.8rem 2rem;
+            border-left: 2px solid var(--gold);
+            margin-left: 0.5rem;
+            position: relative;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .timeline li::before {
+            content: '';
+            position: absolute;
+            left: -7px;
+            top: 1.1rem;
+            width: 12px;
+            height: 12px;
+            background: var(--gold);
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(201, 169, 110, 0.6);
+        }
+
+        .timeline li strong {
+            color: var(--gold-light);
+            display: block;
+            margin-bottom: 2px;
+        }
+        .timeline li:last-child {
+            border-left: 2px solid var(--gold);  /* сохраняем линию до точки */
+        }
+
+        .timeline li:last-child::after {
+            content: '';
+            position: absolute;
+            left: -10px;                 /* ширина перекрытия (чуть левее линии) */
+            bottom: 0;
+            width: 20px;
+            height: calc(100% - 1.87rem); /* от низа блока до высоты чуть ниже точки */
+            background: var(--bg-panel); /* цвет фона панели */
+        }
+        .timeline li:first-child::after {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 0;
+            width: 20px;
+            height: calc(1.1rem);  /* covers up to the centre of the dot */
+            background: var(--bg-panel);
+        }
+
+        /* ---------- КАРТА ---------- */
+        #map-container {
+            width: 100%;
+            height: 500px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 2px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: #2a2a2a;
+        }
+
+        .map-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-panel);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        /* ---------- КНИГА ---------- */
+        .book-container {
+            width: 100%;
+            min-height: 600px;
+            background: #1e1e1e;
+            border-radius: var(--radius);
+            border: 2px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .book-placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 1.2rem;
+            max-width: 500px;
+        }
+
+        .book-placeholder .book-icon {
+            font-size: 5rem;
+            display: block;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+
+        .book-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 3rem 2rem;
+            margin-top: 1.5rem;
+            transition: var(--transition);
+            cursor: pointer;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .book-upload-area:hover {
+            border-color: var(--gold);
+            background: rgba(201, 169, 110, 0.05);
+        }
+
+        .book-upload-area input[type="file"] {
+            display: none;
+        }
+
+        .book-btn {
+            display: inline-block;
+            background: var(--gold);
+            color: #1a1a1a;
+            border: none;
+            padding: 0.8rem 2rem;
+            font-family: 'Georgia', serif;
+            font-size: 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: 1px;
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+
+        .book-btn:hover {
+            background: var(--gold-light);
+            box-shadow: 0 4px 20px rgba(201, 169, 110, 0.5);
+            transform: translateY(-2px);
+        }
+
+
+        
+        /* ---------- публикации ---------- */
+        .pub-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            color: var(--text);
+            background: var(--bg-panel);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .pub-table th,
+        .pub-table td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+        .pub-table th {
+            color: var(--gold-light);
+            font-weight: normal;
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--gold);
+            background: rgba(201, 169, 110, 0.05);
+        }
+        .pub-table tbody tr:hover td {
+            background: rgba(201, 169, 110, 0.05);
+        }
+        .pub-table .book-btn {
+            padding: 0.5rem 1.2rem;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }        
+
+        /* ---------- ФУТЕР ---------- */
+        .footer {
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        /* ---------- МОДАЛЬНОЕ ОКНО ДЛЯ ФОТО ---------- */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal img {
+            max-width: 90%;
+            max-height: 80vh;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--gold);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 2.5rem;
+            color: #fff;
+            cursor: pointer;
+            transition: var(--transition);
+            z-index: 101;
+        }
+
+        .modal-close:hover {
+            color: var(--gold);
+            transform: scale(1.2);
+        }
+
+        .modal-caption {
+            color: var(--text);
+            margin-top: 1rem;
+            font-style: italic;
+            font-size: 1.1rem;
+        }
+
+        /* ---------- АДАПТИВ ---------- */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .nav {
+                gap: 0.5rem;
+                padding: 1rem;
+            }
+            .nav-btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.8rem;
+                letter-spacing: 0.5px;
+            }
+            .bio-grid {
+                grid-template-columns: 1fr;
+            }
+            .bio-portrait-placeholder {
+                max-width: 200px;
+                margin: 0 auto;
+            }
+            #map-container {
+                height: 350px;
+            }
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 1rem;
+            }
+            .panel {
+                padding: 1.5rem;
+            }
+            .main {
+                padding: 0 1rem;
+                margin: 1rem auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ========== ШАПКА ========== -->
+<header class="header">
+    <h1>Виртуальный музей Александра Константиновича Матвеева</h1>
+    <p class="subtitle">«В жизни, как в музыке, основа всего – в гармонии. Работа – это ещё
+    не вся жизнь. Надо любить природу и всё прекрасное, закалять дух и тело,
+    научиться умерять свои амбиции и не суетиться.»</p>
+</header>
+
+<!-- ========== НАВИГАЦИЯ ========== -->
+<nav class="nav" id="mainNav">
+    <button class="nav-btn active" data-page="biography">
+        <span class="icon">📜</span> Биография
+    </button>
+    <button class="nav-btn" data-page="map">
+        <span class="icon">🗺️</span> Карта и путь
+    </button>
+    <button class="nav-btn" data-page="book">
+        <span class="icon">📖</span> Книга об ученом
+    </button>
+    <button class="nav-btn" data-page="publications">
+        <span class="icon">📚</span> Публикации
+    </button>
+</nav>
+
+<!-- ========== ОСНОВНОЙ КОНТЕНТ ========== -->
+<main class="main">
+
+    <!-- ----- СТРАНИЦА: БИОГРАФИЯ ----- -->
+    <section class="page active" id="page-biography">
+        <div class="panel">
+            <h2>📜 Жизненный путь Александра Константиновича</h2>
+            <div class="bio-grid">
+                <!-- Портрет -->
+                <img 
+                    src="images/Matveyev_AK.jpg" 
+                    alt="Матвеев А.К" 
+                    class="bio-portrait"
+                >
+                <div>
+                    <p>
+                       Матвеев Александр Константинович (1926-2010) - Советский и российский лингвист, специалист в области уральской и северорусской диалектной лексики,
+                        и субстратной топонимики; занимался также этимологией, ономастикой, финно-угроведением, теорией языковых контактов. 
+                        Член-корреспондент РАН с 7 декабря 1991 по секции гуманитарных и общественных наук (языкознание). 
+                        Профессор УрГУ им. А. М. Горького (ныне УрФУ), основатель Уральской ономастической школы.
+                    </p>
+                    <p>
+                        В 1949 году окончил факультет русского языка и литературы Хабаровского педагогического института.
+                    </p>
+                    <p>
+                        С 1952 года — в УрГУ им. А. М. Горького. В 1961–2005 гг. — заведующий кафедрой русского языка и общего языкознания УрГУ. Доктор филологических наук (1970), профессор (1971).
+                    </p>
+                    <p>
+                        А. К. Матвеев — автор более 270 научных публикаций, глава научной школы в области ономастики и топонимии. Внес значительный вклад в исследование практических и теоретических проблем этимологии, ономастики, диалектологии, древнейшей истории финно-угров. Был широко известен как блестящий лектор, педагог, эрудит.
+                    </p>
+                    <p>
+                        Создатель топонимической экспедиции УрГУ — уникального научного сообщества, накопившего миллионные картотеки полевых лексических и ономастических материалов. Под руководством А. К. Матвеева составлены большинство томов основного корпуса «Словаря русских говоров Среднего Урала» (1981–1988). Он также руководил созданием «Словаря говоров Русского Севера» (тт. 1–3) и «Материалов к словарю финно-угро-самодийских заимствований в говорах Русского Севера» (т. 1, 2004). А. К. Матвеевым были подготовлены первый топонимический и первый оронимический словари Урала.
+                    </p>
+                    <p>
+                        А. К. Матвеев был главным редактором всероссийского научного журнала «Вопросы ономастики» с момента его создания до своей смерти.
+                    </p>
+                    <p>
+                        В УрГУ А. К. Матвеев в разное время читал курсы «Введение в языкознание», «Общее языкознание» и «Введение в славянскую филологию», а также спецкурсы: «Топонимия Урала», «Методы топонимических исследований», «Происхождение славян (лингвистический аспект)», «Меря и мерянский язык», «Индоевропейцы и индоевропейские языки». Под руководством А. К. Матвеева были защищены 6 докторских и более 30 кандидатских диссертаций.
+                    </p>
+                    <p>
+                        Заслуженный деятель науки РСФСР (1988). Почетный профессор Уральского государственного университета (1996).
+                    </p>
+                    <h3>Хроника</h3>
+                    <ul class="timeline">
+                        <li><strong>1926</strong> Родился в г. Свердловске 8 июля</li>
+                        <li><strong>1943</strong> Окончил среднюю школу № 5 г. Свердловска</li>
+                        <li><strong>1943</strong> Зачислен на военную службу в Красную Армию 27 ноября</li>
+                        <li><strong>1944</strong> Курсант Челябинского военного авиационного училища штурманов
+                        и стрелков-радистов авиации дальнего действия с 2 февраля</li>
+                        <li><strong>1945</strong> Окончил курс обучения стрелков-радистов АДД,
+                        5 июля получил воинское звание «старшина»</li>
+                        <li><strong>1949</strong> Окончил Хабаровский педагогический институт,
+                        факультет русского языка и литературы.</li>
+                        <li><strong>1950</strong> Лаборант кабинета иностранных языков Свердловского
+                        педагогического института иностранных языков с 30 мая.</li>
+                        <li><strong>1950</strong> Преподаватель латинского языка Свердловского педагогического
+                        института иностранных языков с 1 сентября.</li>
+                        <li><strong>1952</strong> Преподаватель кафедры классической филологии Уральского
+                         государственного университета (УрГУ) с 1 февраля</li>
+                        <li><strong>1952</strong> Зарегистрирован брак с Эльвирой Николаевной Орловой.</li>
+                        <li><strong>1954</strong> Рождение сына Андрея 12 июля</li>
+                        <li><strong>1957</strong> Преподаватель кафедры русского языка и общего языкознания УрГУ с 1 сентября.</li>
+                        <li><strong>1957</strong> Старший преподаватель кафедры русского языка и общего языкознания
+                        УрГУ с 5 ноября</li>
+                        <li><strong>1958</strong> Зарегистрирован брак с Галиной Алексеевной Чупиной.</li>
+                        <li><strong>1959</strong> По результатам защиты диссертации «Финно-угорские заимствования
+                        в русских говорах Северного Урала» 30 декабря присуждена
+                        учёная степень кандидата филологических наук.</li>
+                        <li><strong>1960</strong> Рождение дочери Юлии 21 сентября.</li>
+                        <li><strong>1961</strong> Избран заведующим кафедрой русского языка и общего языкознания
+                        УрГУ 7 сентября (руководил кафедрой до 2005 г.).</li>
+                        <li><strong>1961</strong> Начало работы Севернорусской топонимической экспедиции
+                        (позже – Топонимической экспедиции) Уральского университета: начальник
+                        экспедиции по 1983 г. Научный руководитель экспедиции до конца жизни</li>
+                        <li><strong>1962</strong> Выход в свет первого выпуска периодического издания «Вопросы топономастики»
+                        (позднее «Вопросы ономастики» и др.): автор идеи, главный редактор издания
+                        до конца жизни; утверждён в звании доцента 28 июля</li>
+                        <li><strong>1967</strong> Зарегистрирован брак с Тамарой Вячеславовной Марадудиной 18 июля.</li>
+                        <li><strong>1969</strong> Рождение сына Константина 29 июля</li>
+                        <li><strong>1971</strong> По результатам защиты диссертации «Русская топонимика финно-угорского
+                        происхождения на территории Севера европейской части СССР»
+                        присуждена учёная степень доктора филологических наук 27 января</li>
+                        <li><strong>1971</strong> Утверждён в учёном звании профессора 30 апреля</li>
+                        <li><strong>1972</strong> Рождение дочери Анны 19 января.</li>
+                        <li><strong>1979</strong> Открытие научно-учебной Топонимической лаборатории
+                        при кафедре русского языка и общего языкознания УрГУ
+                        (с 1981 г. лаборатория – штатное подразделение УрГУ/ИГНИ):
+                        инициатор создания, разработчик программы; заведующий по 2001 год</li>
+                        <li><strong>1980</strong> За словарь «Географические названия Урала» присвоено звание лауреата
+                        региональной премии им. краеведа В.П. Бирюкова</li>
+                        <li><strong>1982</strong> Начало разработки комплексной программы Минвуза РСФСР «Духовная культура
+                        Урала»; инициатор, заместитель руководителя программы (по 1990-й).</li>
+                        <li><strong>1984</strong> Награждён медалью «Ветеран труда» 6 сентября.</li>
+                        <li><strong>1988</strong> Присвоено почётное звание «Заслуженный деятель науки РСФСР» 7 апреля.</li>
+                        <li><strong>1991</strong> Избран членом-корреспондентом Российской академии наук 7 декабря.</li>
+                        <li><strong>1992</strong> Научный руководитель и заместитель директора
+                        Научно-исследовательского института русской культуры
+                        при Уральском государственном университете (по 1994-й)</li>
+                        <li><strong>1994</strong> Распоряжением Правительства Российской Федерации введён в первый состав
+                        Российского гуманитарного научного фонда (РГНФ) </li>
+                        <li><strong>1996</strong> Присвоено звание «Ветеран труда УрГУ» 5 августа.</li>
+                        <li><strong>1996</strong> Присвоено звание почётного профессора
+                        Уральского государственного университета. </li>
+                        <li><strong>1997</strong> Главный редактор серии «Гуманитарные науки (история, филология,
+                        искусствоведение)» журнала «Известия Уральского государственного
+                        университета» (по 2002-й)</li>
+                        <li><strong>2001</strong> Выход в свет первого тома обобщающей монографии
+                        «Субстратная топонимия Русского Севера»
+                        (в 2004 г. вышел 2-й том, в 2007 – 3-й том).</li>
+                        <li><strong>2003</strong> Избран иностранным членом Финно-угорского общества
+                        (Финляндия, Хельсинки)</li>
+                        <li><strong>2004</strong> Выход основанного на базе УрГУ первого номера российского журнала
+                        «Вопросы ономастики»; инициатор проекта,
+                        разработчик концепции журнала, главный редактор.</li>
+                        <li><strong>2005</strong> Переведён на должность профессора-консультанта 1 сентября. </li>
+                        <li><strong>2005</strong> Смерть сына Константина 17 ноября</li>
+                        <li><strong>2006</strong> Опубликован обобщающий научный труд «Ономатология».</li>
+                        <li><strong>2010</strong> Умер в г. Екатеринбурге 9 октября.</li>
+                        <li><strong>2011</strong> Выход в свет книги «Материалы по мансийской топонимии
+                        горной части Северного Урала».</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ----- СТРАНИЦА: КАРТА И ТОЧКИ ПУТИ ----- -->
+    <section class="page" id="page-map">
+        <div class="panel">
+            <h2>🗺️ География жизни учёного</h2>
+            <p>Интерактивная карта с ключевыми точками маршрута Александра Константиновича. Нажмите на маркер, чтобы узнать подробности.</p>
+            <div id="map-container">
+                <div id="map"></div>
+            </div>
+            <div class="map-legend">
+                <div class="legend-item">
+                    <span class="legend-dot" style="background:#e74c3c; color:#e74c3c;"></span> Учеба и преподавание
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot" style="background:#3498db; color:#3498db;"></span> Экспедиции (координаты с погрешностью до района)
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ----- СТРАНИЦА: КНИГА ----- -->
+    <section class="page" id="page-book">
+        <div class="panel">
+            <h2>📖 Не просто прожитая жизнь</h2>
+            <p>Биография А. К. Матвеева в документах и воспоминаниях, с фотографиями</p>
+            <div class="book-container" id="bookContainer">
+                <div class="book-placeholder" id="bookPlaceholder">
+                    <button class="book-btn" id="loadDemoBook">📘 Показать книгу</button>
+                </div>
+                <!-- Контейнер для встроенного просмотрщика PDF -->
+                <iframe id="bookIframe" style="display:none; width:100%; height:600px; border:none; border-radius:8px;"
+                        title="Просмотр книги"></iframe>
+            </div>
+        </div>
+    </section>
+
+
+ <!-- ----- СТРАНИЦА: публикации ----- -->
+    <section class="page" id="page-publications">
+        <div class="panel">
+            <h2>📚 Избранные труды</h2>
+            <p>Выборка из 10 публикации Александра Константиновича Матвеева для ознакомления. + указатель</p>
+            <div id="pubsContainer">
+                <div id="pubsPlaceholder" class="book-placeholder" style="min-height: 200px;">
+                    <p style="color:var(--text-muted);">Выберите публикацию из таблицы ниже, чтобы открыть её здесь.</p>
+                </div>
+                <iframe id="pubsIframe" style="display:none; width:100%; height:600px; border:none; border-radius:8px;"
+                        title="Просмотр публикации"></iframe>
+            </div>
+        </div>
+        <div class="panel">
+            <h3>📄 Список публикаций</h3>
+            <table class="pub-table">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Читать</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Указатель трудов (Составитель А.В.Глазырин)</td>
+                        <td><button class="book-btn pub-link" data-pdf="publications/указатель трудов + экспедиции.pdf">📘 Открыть</button></td>
+                    </tr>
+                    <tr>
+                        <td>Географические названия Урала</td>
+                        <td><button class="book-btn pub-link" data-pdf="publications/Географические названия Урала (2008).pdf">📘 Открыть</button></td>
+                    </tr>
+                    <tr>
+                        <td>Словарь финно-угро-самодийских заимствований</td>
+                        <td><button class="book-btn pub-link" data-pdf="publications/finnugor.pdf">📘 Открыть</button></td>
+                    </tr>
+                    <tr>
+                        <td>Топонимия Урала как памятник языка и истории - доклад</td>
+                        <td><button class="book-btn pub-link" data-pdf="publications/topo.pdf">📘 Открыть</button></td>
+                    </tr>
+                    <tr>
+                        <td>От Пай-Хоя до Мугоджар. Названия уральских гор и хребтов</td>
+                        <td><button class="book-btn pub-link" data-pdf="publications/ot_paj_hoya_do_mugodzhar.pdf">📘 Открыть</button></td>
+                    </tr>
+                    <tr>
+                        <td>Топономия Урала 1985</td>
+                        <td><button class="book-btn pub-link" data-pdf="publications/toponimiya_urala85.pdf">📘 Открыть</button></td>
+                    </tr>
+                    <tr>
+                        <td>Субстратная топонимия Русского Севера</td>
+                        <td><button class="book-btn pub-link" data-pdf="publications/substrat.pdf">📘 Открыть</button></td>
+                    </tr>
+                    <tr>
+                        <td>  Епрь и Вепрь // История русского слова: ономастика и специальная лексика Северной Руси. — Вологда : ВГПУ, 2002. — С. 140–145</td>
+                        <td><button class="book-btn pub-link" data-pdf="publications/epr.pdf">📘 Открыть</button></td>
+                    </tr>
+                    <tr>
+                        <td>[ред.] Cловарь говоров Русского Севера</td>
+                        <td><button class="book-btn pub-link" data-pdf="publications/slovargovor.pdf">📘 Открыть</button></td>
+                    </tr>
+                    <tr>
+                        <td>  Мансийская топонимия как историко-этнографический феномен // Этнолингвистика. Ономастика. Этимология : материалы междунар. науч. конф. С. 168–169</td>
+                        <td><button class="book-btn pub-link" data-pdf="publications/etimologija.pdf">📘 Открыть</button></td>
+                    </tr>
+                    <!-- Добавляйте новые строки -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<!-- ========== МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА ФОТО ========== -->
+<div class="modal" id="photoModal">
+    <span class="modal-close" id="modalClose">&times;</span>
+    <img id="modalImage" src="" alt="Фотография">
+    <p class="modal-caption" id="modalCaption"></p>
+</div>
+
+<!-- ========== ФУТЕР ========== -->
+<footer class="footer">
+    <p>2026 Виртуальный музей Матвеева А.К. | Создано для УрФУ</p>
+</footer>
+
+
+
+<!-- Подключение API Яндекс.Карт -->
+<!-- Подключение API Яндекс.Карт (замените ключ на свой) -->
+<script src="https://api-maps.yandex.ru/2.1/?apikey=ВАШ_API_КЛЮЧ&lang=ru_RU" type="text/javascript"></script>
+
+<script>
+    (function() {
+        // ---------- ПЕРЕКЛЮЧЕНИЕ СТРАНИЦ ----------
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const pages = document.querySelectorAll('.page');
+
+        function switchPage(pageId) {
+            pages.forEach(page => page.classList.remove('active'));
+            const target = document.getElementById('page-' + pageId);
+            if (target) {
+                target.classList.add('active');
+                if (pageId === 'map') {
+                    initMap();
+                }
+            }
+            navButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-page') === pageId) {
+                    btn.classList.add('active');
+                }
+            });
+            window.scrollTo({ top: document.querySelector('.main').offsetTop - 100, behavior: 'smooth' });
+        }
+
+        navButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const pageId = this.getAttribute('data-page');
+                switchPage(pageId);
+            });
+        });
+
+        // ---------- КАРТА НА ЯНДЕКС API С ДВУМЯ МАРШРУТАМИ ----------
+        let mapInitialized = false;
+        let mapInstance = null;
+
+        function initMap() {
+            const mapContainer = document.getElementById('map');
+            if (!mapContainer || mapContainer.offsetParent === null) return;
+
+            if (mapInitialized) {
+                if (mapInstance) {
+                    mapInstance.container.fitToViewport();
+                }
+                return;
+            }
+
+            mapInitialized = true;
+
+            ymaps.ready(function() {
+                mapInstance = new ymaps.Map('map', {
+                    center: [56.83, 60.59],
+                    zoom: 5,
+                    controls: ['zoomControl', 'fullscreenControl']
+                });
+
+                // Все точки с указанием цвета и группировки
+                const allPoints = [
+                    // Красные точки
+                    {
+                        coords: [56.83, 60.59],
+                        color: '#e74c3c',
+                        group: 'red',
+                        title: '🏠 Рождение',
+                        desc: 'Г. Свердловск.<br>8 июля 1926 года.'
+                    },
+                    {
+                        coords: [55.16, 61.43],
+                        color: '#e74c3c',
+                        group: 'red',
+                        title: '🎖️ Военная служба',
+                        desc: 'Г. Челябинск. '
+                    },
+                    {
+                        coords: [48.48, 135.07],   // пример дополнительной красной точки
+                        color: '#e74c3c',
+                        group: 'red',
+                        title: '📚 Учёба',
+                        desc: 'Окончил Хабаровский педагогический институт 1949.'
+                    },
+                    {
+                        coords: [56.84069133016731, 60.61635405430129],   // пример дополнительной красной точки
+                        color: '#e74c3c',
+                        group: 'red',
+                        title: '📚 УрГУ',
+                        desc: 'Преподавательская карьера.'
+                    },
+                    // Синие точки
+                    
+                    {
+                        coords: [59.777860, 62.939954],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1955 (июнь - июль). Северный Урал. ',
+                        desc: 'Гаринский район Свердловской обл. (бас. pp. Пелым и Вагиль). '
+                    },
+                    {
+                        coords: [59.65197260565188, 63.09857155250378],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1956 (январь - февраль). Северный Урал',
+                        desc: 'Гаринский район Свердловской обл. (бас. р. Пелым).'
+                    },
+                    {
+                        coords: [61.8034142806679, 57.88670430877538],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1956 (июль). Северный Урал',
+                        desc: 'Троицко-Печорский район Коми АССР, Чердынский район Пермской обл. (Верхняя Печора, Унья, Колва).'
+                    },
+                    {
+                        coords: [61.02154184729145, 61.98795756408967],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1957 (январь - февраль). Северный Урал',
+                        desc: 'Гаринский район Свердловской обл. (бас. pp. Пелым и Вагиль).'
+                    },
+                    {
+                        coords: [56.63419420154099, 62.835175948362696],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1957 (июнь). Северный Урал.',
+                        desc: 'Карпинский и Новолялинский районы Свердловской обл. (Бабиновская дорога).'
+                    },
+                    {
+                        coords: [60.5095005352939, 57.68869073238266],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1957 (июль). Северный Урал',
+                        desc: 'Красновишерский район Пермской обл. (бас. р. Вишера). '
+                    },
+                    {
+                        coords: [58.05608907693846, 61.023215530049406],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1958 (февраль). Средний Урал',
+                        desc: 'Акинфиево район Свердловской обл. (с. Акинфиево). '
+                    },
+                    {
+                        coords: [58.530044712716546, 64.74186930863321],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1958 (июнь). Средний Урал',
+                        desc: 'Таборинский район Свердловской обл.'
+                    },
+                    {
+                        coords: [60.842219572884794, 56.79842770282963],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1958 (июль). Северный Урал',
+                        desc: 'Чердынский район Пермской обл. (бас. р. Колва, д. Дий)'
+                    },
+                    {
+                        coords: [57.89499665387067, 58.7526259143876],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1959 (июль). Средний Урал',
+                        desc: 'Пригородный район Свердловской обл., д. Копчик (бас. р. Чусовая)'
+                    },
+                    {
+                        coords: [60.843509132548895, 56.8241692349255],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1959 (июль - август). Северный Урал',
+                        desc: 'Чердынский район Пермской обл. (бас. р. Колва)'
+                    },
+                    {
+                        coords: [56.93325001088596, 55.582050766114236],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1960 (май - июнь). Средний Урал',
+                        desc: 'Бардымский район Пермской обл.'
+                    },
+                    {
+                        coords: [63.95408190655533, 44.51076093330691],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1961 (февраль). Русский Север',
+                        desc: 'Пинежский район Архангельской обл. (с. Кеврола)'
+                    },
+                    {
+                        coords: [63.797316576020236, 45.11788651208742],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1961 (июль). Русский Север.',
+                        desc: 'Пинежский и Холмогорский район Архангельской обл'
+                    },
+                    {
+                        coords: [64.88912382684514, 46.09852384570701],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1962 (январь - февраль). Русский Север',
+                        desc: 'Лешуконский район Архангельской обл'
+                    },
+                    {
+                        coords: [63.458624090096, 45.371930936030566],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1962 (июнь - июль). Русский Север',
+                        desc: 'Вельский и Пинежский районы Архангельской обл. (бас. р. Сура)'
+                    },
+                    {
+                        coords: [62.22262209736605, 44.957712577500956],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1962 (ноябрь - декабрь). Русский Север',
+                        desc: 'Приозерный район Архангельской обл'
+                    },
+                    {
+                        coords: [61.14091229702092, 43.4461083849342],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1963 (январь - февраль). Русский Север',
+                        desc: 'Устьянский район Архангельской обл'
+                    },
+                    {
+                        coords: [62.95127921289294, 45.936060695826505],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1963 (июнь). Саяны',
+                        desc: 'Саянский район Красноярского края (д. Абалаково)'
+                    },
+                    {
+                        coords: [],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1963 (июль). Русский Север',
+                        desc: 'Верхнетоемский район Архангельской обл. (бас. р. Выя)'
+                    },
+                    {
+                        coords: [64.70013971852276, 43.39268356939455],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1964 (январь - февраль). Русский Север',
+                        desc: 'Верхнетоемский район Архангельской обл. (Верхняя Пинега)'
+                    },
+                    {
+                        coords: [55.06945811606946, 94.82298338541693],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1964 (май - июнь). Саяны',
+                        desc: 'Саянский район Красноярского края (д. Абаланово)'
+                    },
+                    {
+                        coords: [57.68804936581539, 63.061177642110046],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1964 (июль). Средний Урал',
+                        desc: 'Ирбитский район Свердловской обл'
+                    },
+                    {
+                        coords: [53.42330450577742, 95.3888677100805],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1964 (июль - август). Саяны',
+                        desc: 'Саянский район Красноярского края.'
+                    },
+                    {
+                        coords: [61.28217698518199, 43.952608021769024],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1965 (январь - февраль). Русский Север',
+                        desc: 'Устьянский район Архангельской обл'
+                    },
+                    {
+                        coords: [55.129297993524546, 94.78304060269842],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1965 (июль - август). Саяны',
+                        desc: 'Саянский район Красноярского края, Нижнеудинский район Иркутской обл'
+                    },
+                    {
+                        coords: [57.68043033344039, 66.22865353309741],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1965 (декабрь). Средний Урал',
+                        desc: 'Нижнетавдинский район Тюменской обл'
+                    },
+                    {
+                        coords: [59.428758226323254, 62.454855316435044],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1966 (январь - февраль). Северный Урал',
+                        desc: 'Гаринский район Свердловской обл'
+                    },
+                    {
+                        coords: [56.840701691345444, 62.8131766945527],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1966 (июль). Средний Урал',
+                        desc: 'Камышловский и Байкаловский районы Свердловской обл'
+                    },
+                    {
+                        coords: [59.428758226323254, 62.454855316435044],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1966 (июль - август). Северный Урал',
+                        desc: 'Гаринский район Свердловской обл'
+                    },
+                    {
+                        coords: [60.031115483479006, 37.85655960319958],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1967 (июль - август). Русский Север',
+                        desc: 'Белозерский район Вологодской обл. Приозерный район Архангельской обл. (Кенозеро)'
+                    },
+                    {
+                        coords: [59.428758226323254, 62.454855316435044],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1968 (январь - февраль). Северный Урал',
+                        desc: 'Ивдельский и Гаринский районы Свердловской обл'
+                    },
+                    {
+                        coords: [60.705175934748375, 60.40660353368129],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1968 (июль - август). Северный Урал',
+                        desc: 'Ивдельский район Свердловской обл. (летние кочевья манси-оленеводов)'
+                    },
+                    {
+                        coords: [62.13464048353787, 40.39940453846025],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1969 (январь - февраль). Русский Север',
+                        desc: 'Няндомский район Архангельской обл. (бас. р. Моша)'
+                    },
+                    {
+                        coords: [60.705175934748375, 60.40660353368129],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1969 (июль - август). Северный Урал',
+                        desc: 'Ивдельский район Свердловской обл. (летние кочевья манси-оленеводов).'
+                    },
+                    {
+                        coords: [60.45673773914669, 38.63860273049416],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1970 (январь - февраль). Русский Север',
+                        desc: 'Кирилловский район Вологодской обл. (Чарозеро)'
+                    },
+                    {
+                        coords: [60.705175934748375, 60.40660353368129],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1970 (июль - август). Северный Урал.',
+                        desc: 'Ивдельский район Свердловской обл. (летние кочевья манси-оленеводов)'
+                    },
+                    {
+                        coords: [60.47440191778521, 40.22044364038779],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1971 (январь). Русский Север',
+                        desc: 'Вожегодский район Вологодской обл.'
+                    },
+                    {
+                        coords: [60.705175934748375, 60.40660353368129],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1971 (июль - август). Северный Урал',
+                        desc: 'Ивдельский район Свердловской обл. (летние кочевья манси-оленеводов)'
+                    },
+                    {
+                        coords: [62.79303817282634, 44.28835677124584],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1972 (июль - август). Русский Север',
+                        desc: 'Верхнетоемский и Виноградовский районы Архангельской обл'
+                    },
+                    {
+                        coords: [61.96226816434999, 45.915757543855776],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1972 (сентябрь). Русский Север.',
+                        desc: 'Верхнетоемский район Архангельской обл. (Лахома)'
+                    },
+                    {
+                        coords: [62.68479051058193, 39.914208452218084],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1973 (январь - февраль). Русский Север',
+                        desc: 'Няндомский, Онежский, Плесецкий районы Архангельской обл. (бас. р. Онега)'
+                    },
+                    {
+                        coords: [61.54947323283034, 45.9352038040484],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1973 (июль - август). Русский Север',
+                        desc: 'Никольский район Вологодской обл. (бас. р. Юг), Красноборский район Архангельской обл.'
+                    },
+                    {
+                        coords: [59.66104951673862, 46.06377164463851],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1973 (октябрь). Русский Север',
+                        desc: 'Никольский район Вологодской обл'
+                    },
+                    {
+                        coords: [60.97672297730295, 40.300455555249506],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1974 (январь - февраль). Русский Север',
+                        desc: 'Коношский район Архангельской обл.'
+                    },
+                    {
+                        coords: [59.960688147315594, 45.947192756081975],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1974 (июль - август). Русский Север',
+                        desc: 'Кичменгско-Городецкий район Вологодской обл. (бас. р. Юг)'
+                    },
+                    {
+                        coords: [61.28403387561879, 43.603805949236744],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1975 (январь - февраль). Русский Север',
+                        desc: 'Устьянский район Архангельской обл'
+                    },
+                    {
+                        coords: [61.58191911912876, 42.537907073412576],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1975 (июль - август). Русский Север',
+                        desc: 'Вельский и Шенкурский районы Архангельской обл'
+                    },
+                    {
+                        coords: [57.497007691524985, 59.38138594444505],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1976 (июль). Средний Урал',
+                        desc: 'Пригородный и Шалинский районы Свердловской обл'
+                    },
+                    {
+                        coords: [64.21291681438055, 41.73788381504366],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1976 (август). Русский Север',
+                        desc: 'Холмогорский район Архангельской обл. (бас. р. Емца)'
+                    },
+                    {
+                        coords: [58.29728897345051, 43.83746900051168],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1977 (февраль). Русский Север',
+                        desc: 'Нейский район Костромской обл'
+                    },
+                    {
+                        coords: [58.89358454680206, 45.69578643622967],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1977 (июль). Русский Север',
+                        desc: 'Пыщугский район Костромской обл'
+                    },
+                    {
+                        coords: [63.93489318063294, 65.02505151571017],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1977 (август - сентябрь). Северный Урал',
+                        desc: 'Березовский район Ханты-Мансийского авт. округа.'
+                    },
+                    {
+                        coords: [58.35917371746372, 42.41084462689999],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1978 (январь). Русский Север',
+                        desc: 'Галичский район Костромской обл.'
+                    },
+                    {
+                        coords: [59.50738686324011, 45.512167017656594],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1978 (июль). Русский Север',
+                        desc: 'Никольский район Вологодской обл.'
+                    },
+                    {
+                        coords: [63.93489318063294, 65.02505151571017],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1978 (август). Северный Урал',
+                        desc: 'Березовский район Ханты-Мансийского авт. округа'
+                    },
+                    {
+                        coords: [51.474888344604906, 57.33812993953579],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: ' 1979 (июль - август). Южный Урал',
+                        desc: 'Кувандыкский район Оренбургской обл'
+                    },
+                    {
+                        coords: [54.02652098070236, 58.512520660402124],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1980 (июнь). Южный Урал',
+                        desc: 'Белорецкий и Бурзянский районы Башкирской АССР'
+                    },
+                    {
+                        coords: [60.058731150407745, 36.036597790918],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1980 (июль). Русский Север',
+                        desc: 'Бабаевский район Вологодской обл.'
+                    },
+                    {
+                        coords: [57.507536780591565, 59.01556542816034],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1980 (август). Средний Урал',
+                        desc: 'Пригородный и Шалинский районы Свердловской обл'
+                    },
+                    {
+                        coords: [57.497007691524985, 59.38138594444505],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1981 (июль - август). Средний Урал',
+                        desc: 'Пригородный и Шалинский районы Свердловской обл'
+                    },
+                    {
+                        coords: [60.09899824298691, 57.446932117322945],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1982 (январь - февраль). Северный Урал',
+                        desc: 'Красновишерский район Пермской обл. (Верхняя Язьва)'
+                    },
+                    {
+                        coords: [57.49971646103945, 59.12216698527441],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1982 (июль - август). Средний Урал',
+                        desc: 'Шалинский район Свердловской обл. (бас. р. Чусовая)'
+                    },
+                    {
+                        coords: [56.77272511417371, 58.35427380667286],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1983 (январь - февраль). Средний Урал',
+                        desc: 'Ачитский район Свердловской обл'
+                    },
+                    {
+                        coords: [56.83800146181291, 58.12695442493999],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1984 (январь - февраль). Средний Урал',
+                        desc: 'Ачитский район Свердловской обл'
+                    },
+                    {
+                        coords: [65.40061476146988, 64.70244323232463],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1984 (июнь), Полярный Урал',
+                        desc: 'Шурышкарский район Ямало Ненецкого авт. округа (с. Мужи)'
+                    },
+                    {
+                        coords: [56.405822545880376, 58.66712845372519],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1984 (июль). Средний Урал',
+                        desc: 'Артинский и Ачитский районы Свердловской обл. (бас. р. Уфа)'
+                    },
+                    {
+                        coords: [56.6425143780445, 60.36483948686584],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1984 (август). Средний Урал',
+                        desc: 'Пригородный и Шалинский районы Свердловской обл. (бас. р. Чусовая)'
+                    },
+                    {
+                        coords: [56.68860298241854, 60.263612107528054],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1985 (июль). Средний Урал.',
+                        desc: 'Пригородный и Шалинский районы Свердловской обл. (бас. р. Чусовая)'
+                    },
+                    {
+                        coords: [64.40528245756427, 63.13477745323065],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1985 (август). Полярный Урал',
+                        desc: 'Березовский район Ханты-Мансийского авт. округа и Шурышкарский район Ямало-Ненецкого авт. округа'
+                    },
+                    {
+                        coords: [56.88593750430136, 59.974830323920415],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1986 (июль - август). Средний Урал',
+                        desc: 'Первоуральск и Пригородный районы Свердловской обл., Лысьвенский район Пермской обл'
+                    },
+                    {
+                        coords: [57.43470401258692, 57.308384965165686],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1987 (июль). Средний Урал',
+                        desc: 'Суксунский район Пермской обл, (бас.р. Сылва)'
+                    },
+                    {
+                        coords: [55.36606408233528, 59.28674480208915],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1987 (июль, вторая половина). Южный Урал',
+                        desc: 'Златоустовский район Челябинской обл, (бас. р. Ай)'
+                    },
+                    {
+                        coords: [54.55417332302905, 57.62015113579203],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1988 (июль). Южный Урал',
+                        desc: 'Катав-Ивановский район Челябинской обл., Белорецкий и Иглинский районы Башкирии (бас. р. Лемеза)'
+                    },
+                    {
+                        coords: [58.40986694915956, 58.86814376083951],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1988 (август). Средний Урал',
+                        desc: 'Горнозаводской район Пермской обл.(бас. р. Койва)'
+                    },
+                    {
+                        coords: [57.61734456378226, 57.66434028563652],   // пример дополнительной синей точки
+                        color: '#3498db',
+                        group: 'blue',
+                        title: '1989 (июнь - июль). Средний Урал',
+                        desc: 'Березовский район Пермской обл. (бас. р. Барда)'
+                    }
+                    
+                ];
+
+                // Группируем точки по цветам
+                const groups = {};
+                allPoints.forEach(point => {
+                    if (!groups[point.group]) {
+                        groups[point.group] = [];
+                    }
+                    groups[point.group].push(point);
+                });
+
+                // Функция для создания метки с заданным цветом
+                function createPlacemark(point) {
+                    return new ymaps.Placemark(point.coords, {
+                        balloonContent: `<b>${point.title}</b><br><small>${point.desc}</small>`
+                    }, {
+                        iconLayout: 'default#imageWithContent',
+                        iconImageHref: 'data:image/svg+xml;utf8,' + encodeURIComponent(
+                            `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
+                                <circle cx="11" cy="11" r="8" fill="${point.color}" stroke="#fff" stroke-width="3"/>
+                            </svg>`
+                        ),
+                        iconImageSize: [22, 22],
+                        iconImageOffset: [-11, -11],
+                        balloonOffset: [0, -12]
+                    });
+                }
+
+                // Цвета линий для каждой группы
+                const lineStyles = {
+                    red: {
+                        strokeColor: '#e74c3c',
+                        strokeWidth: 3,
+                        strokeOpacity: 0.7,
+                        strokeStyle: 'shortdash'
+                    },
+                    blue: {
+                        strokeColor: '#3498db',
+                        strokeWidth: 3,
+                        strokeOpacity: 0.7,
+                        strokeStyle: 'shortdash'
+                    }
+                };
+
+                // Добавляем метки и строим линии для каждой группы
+                for (const [group, points] of Object.entries(groups)) {
+                    // Метки
+                    points.forEach(point => {
+                        mapInstance.geoObjects.add(createPlacemark(point));
+                    });
+
+                    // Линия, только если точек в группе больше одной
+                    if (points.length > 1) {
+                        const coords = points.map(p => p.coords);
+                        const polyline = new ymaps.Polyline(coords, {
+                            balloonContent: `Маршрут (${group === 'red' ? 'красный' : 'синий'})`
+                        }, lineStyles[group] || {
+                            strokeColor: '#000',
+                            strokeWidth: 3,
+                            strokeOpacity: 0.7,
+                            strokeStyle: 'shortdash'
+                        });
+                        mapInstance.geoObjects.add(polyline);
+                    }
+                }
+
+                mapInstance.container.fitToViewport();
+            });
+        }
+
+        // ----------функция (PDF) ----------
+        function displayPDF(url, iframe, placeholder) {
+            iframe.src = url;
+            iframe.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+            iframe.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        // ---------- ЗАГРУЗКА КНИГИ (PDF) ----------
+        const bookIframe = document.getElementById('bookIframe');
+        const bookPlaceholder = document.getElementById('bookPlaceholder');
+        const loadLocalBookBtn = document.getElementById('loadDemoBook');
+
+        if (loadLocalBookBtn) {
+            loadLocalBookBtn.addEventListener('click', () => {
+                displayPDF('book.pdf', bookIframe, bookPlaceholder);
+            });
+        }
+        // ---------- ПУБЛИКАЦИИ ----------
+        const pubsIframe = document.getElementById('pubsIframe');
+        const pubsPlaceholder = document.getElementById('pubsPlaceholder');
+        const pubLinks = document.querySelectorAll('.pub-link');
+
+        pubLinks.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const pdfPath = this.getAttribute('data-pdf');
+                if (pdfPath && pubsIframe) {
+                    displayPDF(pdfPath, pubsIframe, pubsPlaceholder);
+                }
+            });
+        });
+        
+
+        // ---------- ГАЛЕРЕЯ И МОДАЛЬНОЕ ОКНО ----------
+        const galleryItems = document.querySelectorAll('.gallery-item');
+        const modal = document.getElementById('photoModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalCaption = document.getElementById('modalCaption');
+        const modalClose = document.getElementById('modalClose');
+
+        galleryItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const imgTag = this.querySelector('img');
+                const fullSrc = this.getAttribute('data-full') 
+                                || (imgTag ? imgTag.getAttribute('src') : '');
+                const caption = this.getAttribute('data-caption') || '';
+
+                modalImage.src = fullSrc;
+                modalImage.alt = caption;
+                modalCaption.textContent = caption;
+
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+
+        function closeModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            modalImage.src = '';
+        }
+        modalClose.addEventListener('click', closeModal);
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeModal();
+            }
+        });
+
+        // ---------- ПЛАВНЫЙ СКРОЛЛ ПРИ ЗАГРУЗКЕ С ХЕШЕМ ----------
+        function handleHash() {
+            const hash = window.location.hash.replace('#', '');
+            if (hash && ['biography', 'map', 'book', 'photo'].includes(hash)) {
+                switchPage(hash);
+            }
+        }
+        window.addEventListener('hashchange', handleHash);
+        if (window.location.hash) {
+            handleHash();
+        }
+
+        const originalSwitch = switchPage;
+        switchPage = function(pageId) {
+            originalSwitch(pageId);
+            if (window.location.hash !== '#' + pageId) {
+                history.pushState(null, '', '#' + pageId);
+            }
+        };
+
+        console.log('🏛️ Виртуальный музей Александра Константиновича готов к работе.');
+    })();
+</script>
+</body>
+</html>
